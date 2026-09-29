@@ -1,0 +1,237 @@
+{
+ "users": [
+  {
+   "id": "ebccfcd87d17",
+   "name": "Luis",
+   "email": "luisfranciscocaceress@gmail.com",
+   "pass": "05a809d10a54a30665b533c06e146b1e:64c1af97b3b9e5615a9669e9332352c5a4e932097580a5fd74190b9c9ab1a403",
+   "admin": true
+  },
+  {
+   "id": "0d51821530dd",
+   "name": "Vitor",
+   "email": "vitorsantoschacon@gmail.com",
+   "pass": "79b3dcc49cc07eed3961596eb926a302:88e761e4ed95da8bd339a853290f0a70dcc0b835c0fc2ee1895c020861fd76a7",
+   "admin": true
+  },
+  {
+   "id": "386e8e9e0b83",
+   "name": "Nicolas",
+   "email": "nicolascalegon18@gmail.com",
+   "pass": "5ba83944dc205cb3171ac77efd4045f2:6c7eb652ae153053719ea5b46977cdd90c211cc47d183a2e9ff46058dcc5ad6c",
+   "admin": true
+  }
+ ],
+ "teams": [
+  {
+   "id": "fa953c3963ee",
+   "name": "Tubarões PC",
+   "captain": "Capitão Tubarões",
+   "players": [
+    "Jogador 1",
+    "Jogador 2",
+    "Jogador 3",
+    "Jogador 4",
+    "Jogador 5"
+   ],
+   "owner": "auto",
+   "auto": true
+  },
+  {
+   "id": "f5946afa4564",
+   "name": "Fênix United",
+   "captain": "Capitão Fênix",
+   "players": [
+    "Jogador 1",
+    "Jogador 2",
+    "Jogador 3",
+    "Jogador 4",
+    "Jogador 5"
+   ],
+   "owner": "auto",
+   "auto": true
+  },
+  {
+   "id": "eaa949181edc",
+   "name": "Águias do Sul",
+   "captain": "Capitão Águias",
+   "players": [
+    "Jogador 1",
+    "Jogador 2",
+    "Jogador 3",
+    "Jogador 4",
+    "Jogador 5"
+   ],
+   "owner": "auto",
+   "auto": true
+  },
+  {
+   "id": "76e533133865",
+   "name": "Trovão SC",
+   "captain": "Capitão Trovão",
+   "players": [
+    "Jogador 1",
+    "Jogador 2",
+    "Jogador 3",
+    "Jogador 4",
+    "Jogador 5"
+   ],
+   "owner": "auto",
+   "auto": true
+  },
+  {
+   "id": "1f9081dbdbdc",
+   "name": "Leões de Ferro",
+   "captain": "Capitão Leões",
+   "players": [
+    "Jogador 1",
+    "Jogador 2",
+    "Jogador 3",
+    "Jogador 4",
+    "Jogador 5"
+   ],
+   "owner": "auto",
+   "auto": true
+  },
+  {
+   "id": "d3b44d624e49",
+   "name": "Cobras FC",
+   "captain": "Capitão Cobras",
+   "players": [
+    "Jogador 1",
+    "Jogador 2",
+    "Jogador 3",
+    "Jogador 4",
+    "Jogador 5"
+   ],
+   "owner": "auto",
+   "auto": true
+  },
+  {
+   "id": "c14e36ff63b2",
+   "name": "Titãs Gaming",
+   "captain": "Capitão Titãs",
+   "players": [
+    "Jogador 1",
+    "Jogador 2",
+    "Jogador 3",
+    "Jogador 4",
+    "Jogador 5"
+   ],
+   "owner": "auto",
+   "auto": true
+  },
+  {
+   "id": "ba1328120bdc",
+   "name": "Falcões PC",
+   "captain": "Capitão Falcões",
+   "players": [
+    "Jogador 1",
+    "Jogador 2",
+    "Jogador 3",
+    "Jogador 4",
+    "Jogador 5"
+   ],
+   "owner": "auto",
+   "auto": true
+  },
+  {
+   "id": "7d3f2deccac4",
+   "name": "Raio Violeta",
+   "captain": "Capitão Raio",
+   "players": [
+    "Jogador 1",
+    "Jogador 2",
+    "Jogador 3",
+    "Jogador 4",
+    "Jogador 5"
+   ],
+   "owner": "auto",
+   "auto": true
+  },
+  {
+   "id": "1ea5ff35b700",
+   "name": "Gigantes SC",
+   "captain": "Capitão Gigantes",
+   "players": [
+    "Jogador 1",
+    "Jogador 2",
+    "Jogador 3",
+    "Jogador 4",
+    "Jogador 5"
+   ],
+   "owner": "auto",
+   "auto": true
+  },
+  {
+   "id": "3c6ba618f0b9",
+   "name": "Nômades FC",
+   "captain": "Capitão Nômades",
+   "players": [
+    "Jogador 1",
+    "Jogador 2",
+    "Jogador 3",
+    "Jogador 4",
+    "Jogador 5"
+   ],
+   "owner": "auto",
+   "auto": true
+  },
+  {
+   "id": "87cf97dd638f",
+   "name": "Furacão Azul",
+   "captain": "Capitão Furacão",
+   "players": [
+    "Jogador 1",
+    "Jogador 2",
+    "Jogador 3",
+    "Jogador 4",
+    "Jogador 5"
+   ],
+   "owner": "auto",
+   "auto": true
+  },
+  {
+   "id": "7140e1a6e3c6",
+   "name": "Sombras United",
+   "captain": "Capitão Sombras",
+   "players": [
+    "Jogador 1",
+    "Jogador 2",
+    "Jogador 3",
+    "Jogador 4",
+    "Jogador 5"
+   ],
+   "owner": "auto",
+   "auto": true
+  },
+  {
+   "id": "f35cc7f94238",
+   "name": "Corsários PC",
+   "captain": "Capitão Corsários",
+   "players": [
+    "Jogador 1",
+    "Jogador 2",
+    "Jogador 3",
+    "Jogador 4",
+    "Jogador 5"
+   ],
+   "owner": "auto",
+   "auto": true
+  }
+ ],
+ "sessions": {},
+ "resets": {},
+ "tournament": null,
+ "scorers": [],
+ "events": [
+  {
+   "id": "4d3caccda846",
+   "name": "CAMPEONATO DE ESTREAI! 🔥🔥🔥",
+   "date": "2026-10-03",
+   "format": "6x6",
+   "price": 30,
+   "desc": "Chegou a hora de montar seu time e mostrar quem manda nos gramados virtuais! Reúna sua equipe, participe do Arena Clubs e dispute partidas emocionantes no modo Pro Clubs do EA SPORTS FC 26.  🔥 Premia"
+  }
+ ]
+}
