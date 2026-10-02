@@ -10,21 +10,131 @@ const okpw=(p,h)=>{const x=hash(p,h.split(':')[0]);return x.length===h.length&&c
 const ADMINS=[{"email":"luisfranciscocaceress@gmail.com","name":"Luis","pass":"05a809d10a54a30665b533c06e146b1e:64c1af97b3b9e5615a9669e9332352c5a4e932097580a5fd74190b9c9ab1a403"},{"email":"vitorsantoschacon@gmail.com","name":"Vitor","pass":"79b3dcc49cc07eed3961596eb926a302:88e761e4ed95da8bd339a853290f0a70dcc0b835c0fc2ee1895c020861fd76a7"},{"email":"nicolascalegon18@gmail.com","name":"Nicolas","pass":"5ba83944dc205cb3171ac77efd4045f2:6c7eb652ae153053719ea5b46977cdd90c211cc47d183a2e9ff46058dcc5ad6c"}];
 for(const a of ADMINS){const u=db.users.find(x=>x.email===a.email);if(!u)db.users.push({id:rnd(6),name:a.name,email:a.email,pass:a.pass,admin:true})}
 db.users.forEach(u=>u.admin=ADMINS.some(a=>a.email===u.email));save();
-const BOTS=['Dragões FC','Lobos da Vila','Tubarões PC','Fênix United','Águias do Sul','Trovão SC','Leões de Ferro','Cobras FC','Titãs Gaming','Falcões PC','Raio Violeta','Gigantes SC','Nômades FC','Furacão Azul','Sombras United','Corsários PC'];
 const types={'.html':'text/html; charset=utf-8','.css':'text/css','.js':'text/javascript','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.ico':'image/x-icon'};
 const E=(c,m)=>{const e=new Error(m);e.code=c;return e};
 const clean=(s,n)=>String(s||'').trim().slice(0,n);
+const int=(v,d)=>{const n=parseInt(v,10);return Number.isFinite(n)?n:d};
+function cfgErr(n,c){
+  if(!c.groups)return n<4?'O mata-mata direto precisa de pelo menos 4 times.':null;
+  const min=Math.floor(n/c.groups);
+  if(min<2)return 'Com '+n+' times não dá para fazer '+c.groups+' grupos (mínimo de 2 times por grupo).';
+  if(c.perGroup<1||c.perGroup>min)return 'Quantos passam por grupo: de 1 a '+min+'.';
+  if(c.thirds>c.groups)return 'Terceiros que passam: no máximo '+c.groups+' (um por grupo).';
+  if(c.thirds>0&&c.perGroup+1>min)return 'Os grupos não têm colocados suficientes para classificar terceiros.';
+  const q=c.groups*c.perGroup+c.thirds;
+  if(q<4||q>32)return 'Isso classifica '+q+' times para o mata-mata. Precisa ficar entre 4 e 32.';
+  return null}
 function evData(b,base){
   const name=clean(b.name,50),date=clean(b.date,10),format=clean(b.format,20)||'6x6';
   if(name.length<2)throw E(400,'Digite o nome do campeonato.');
   if(!/^\d{4}-\d{2}-\d{2}$/.test(date))throw E(400,'Escolha a data do campeonato.');
   const price=Math.max(0,+String(b.price).replace(',','.')||0);
-  return{...base,name,date,format,price,desc:clean(b.desc,200)};
+  const maxTeams=int(b.maxTeams,16),groups=int(b.groups,4),sim=b.thirdsOn==='sim';
+  if(maxTeams<4||maxTeams>32)throw E(400,'Quantos times: de 4 a 32.');
+  if(groups<0||groups>8)throw E(400,'Quantos grupos: de 0 a 8 (0 = mata-mata direto).');
+  let rounds=0,perGroup=0,thirds=0;
+  if(groups){
+    rounds=int(b.rounds,0);perGroup=int(b.perGroup,0);thirds=sim?int(b.thirds,0):0;
+    if(rounds<1||rounds>20)throw E(400,'Quantas rodadas: de 1 a 20.');
+    if(sim&&thirds<1)throw E(400,'Informe quantos terceiros passam (mínimo 1) ou escolha "Não".');
+    const err=cfgErr(maxTeams,{groups,rounds,perGroup,thirds});if(err)throw E(400,err);
+  }else{const err=cfgErr(maxTeams,{groups:0});if(err)throw E(400,err)}
+  return{...base,name,date,format,price,desc:clean(b.desc,200),maxTeams,groups,rounds,perGroup,thirds};
 }
-function handle(m,url,b,u,res){
+
+const EA_BASE='https://proclubs.ea.com/api/fc';
+async function eaGet(endpoint, params){
+  const qs=new URLSearchParams(params);
+  const r=await fetch(EA_BASE+'/'+endpoint+'?'+qs.toString(),{
+    headers:{
+      'Accept':'application/json, text/plain, */*',
+      'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/154 Safari/537.36',
+      'Referer':'https://www.ea.com/'
+    },
+    signal:AbortSignal.timeout(12000)
+  });
+  if(!r.ok) throw E(502,'A EA não respondeu à consulta do Pro Clubs ('+r.status+').');
+  return r.json();
+}
+const arr=x=>Array.isArray(x)?x:(x&&typeof x==='object'?Object.values(x):[]);
+function extractRows(raw, keys=[]){
+  if(Array.isArray(raw))return raw;
+  if(!raw||typeof raw!=='object')return [];
+  for(const k of keys){
+    if(Array.isArray(raw[k]))return raw[k];
+    if(raw[k]&&typeof raw[k]==='object'){
+      const v=Object.values(raw[k]);
+      if(v.length)return v;
+    }
+  }
+  if(raw.clubId||raw.clubID||raw.club_id)return [raw];
+  return Object.values(raw).flatMap(v=>Array.isArray(v)?v:(v&&typeof v==='object'?[v]:[]));
+}
+function normalizeClub(x, platform){
+  return {
+    id:String(x?.clubId??x?.clubID??x?.id??x?.club_id??''),
+    name:String(x?.clubName??x?.name??x?.clubname??''),
+    tag:String(x?.clubTag??x?.tag??x?.abbreviation??''),
+    owner:String(x?.ownerName??x?.owner??x?.managerName??''),
+    platform
+  };
+}
+function normalizePlayer(x){
+  return {
+    id:String(x.playerId??x.userId??x.memberId??x.id??''),
+    name:String(x.name??x.playerName??x.playerName??x.gamertag??x.username??x.displayName??''),
+    games:x.gamesPlayed??x.games??x.matches??x.appearances??null,
+    goals:x.goals??null,
+    assists:x.assists??null,
+    rating:x.ratingAve??x.averageRating??x.rating??x.avgRating??null,
+    position:String(x.favoritePosition??x.position??x.pos??''),
+    proName:String(x.proName??'')
+  };
+}
+async function proSearch(name,platform){
+  const attempts=[
+    ['currentSeasonLeaderboard/search',{platform,clubName:name,maxResultCount:'50'}],
+    ['allTimeLeaderboard/search',{platform,clubName:name,maxResultCount:'50'}],
+    ['allTimeLeaderboard/clubs',{platform,clubName:name,maxResultCount:'50'}]
+  ];
+  const found=[];let successful=false;
+  for(const [endpoint,params] of attempts){
+    try{
+      const raw=await eaGet(endpoint,params);successful=true;
+      const rows=extractRows(raw,['clubs','clubData','results','data','items','entries'])
+        .map(x=>normalizeClub(x,platform)).filter(x=>x.id&&x.name);
+      for(const club of rows)if(!found.some(x=>x.id===club.id))found.push(club);
+      if(found.length>=10)break;
+    }catch(_){
+      // Tenta o próximo endpoint: a API pública da EA pode variar entre temporadas.
+    }
+  }
+  if(!successful)throw E(502,'A EA não está respondendo à busca de clubes agora. Tente novamente em alguns segundos.');
+  return found.slice(0,50);
+}
+async function proMembers(clubId,platform){
+  let raw,rows=[];
+  try{
+    raw=await eaGet('members/stats',{platform,clubId:String(clubId),seasonId:'current'});
+    rows=arr(raw);
+  }catch(_){ }
+  if(!rows.length){
+    try{
+      raw=await eaGet('members/career/stats',{platform,clubId:String(clubId)});
+      rows=arr(raw);
+    }catch(_){ }
+  }
+  if(!rows.length && raw && typeof raw==='object'){
+    for(const k of ['members','players','memberStats','stats','data']) if(Array.isArray(raw[k])){rows=raw[k];break}
+    if(!rows.length && raw.members && typeof raw.members==='object') rows=Object.values(raw.members);
+  }
+  return rows.map(normalizePlayer).filter(x=>x.name);
+}
+
+async function handle(m,url,b,u,res){
   const need=()=>{if(!u)throw E(401,'Entre na sua conta primeiro.')}, adm=()=>{need();if(!u.admin)throw E(403,'Só administradores podem fazer isso.')};
   if(m==='GET'&&url==='/api/data')return{teams:db.teams,tournament:db.tournament,scorers:db.scorers,events:db.events};
-  if(m==='GET'&&url==='/api/me')return{user:u?{name:u.name,email:u.email,admin:u.admin}:null};
+  if(m==='GET'&&url==='/api/me')return{user:u?{id:u.id,name:u.name,email:u.email,admin:u.admin}:null};
   if(m==='POST'&&url==='/api/register'){
     const email=clean(b.email,80).toLowerCase(),name=clean(b.name,30);
     if(name.length<2)throw E(400,'Digite seu nome.');
@@ -49,30 +159,53 @@ function handle(m,url,b,u,res){
     if(String(b.password||'').length<6)throw E(400,'A senha precisa ter pelo menos 6 caracteres.');
     db.users.find(x=>x.id===r.id).pass=hash(b.password);delete db.resets[b.token];save();return{ok:1};
   }
+  if(m==='POST'&&url==='/api/proclubs/search'){
+    need();
+    const name=clean(b.name||'',50), platform=clean(b.platform||'common-gen5',30);
+    if(name.length<2)throw E(400,'Digite pelo menos 2 caracteres do nome do clube.');
+    const clubs=await proSearch(name,platform);
+    return{ok:1,clubs};
+  }
+  if(m==='POST'&&url==='/api/proclubs/members'){
+    need();
+    const clubId=clean(b.clubId||'',30), platform=clean(b.platform||'common-gen5',30);
+    if(!clubId)throw E(400,'Club ID inválido.');
+    const players=await proMembers(clubId,platform);
+    return{ok:1,players};
+  }
   if(m==='POST'&&url==='/api/teams'){
     need();const name=clean(b.name,30),captain=clean(b.captain,30);
     const ev=db.events.find(x=>x.id===b.eventId);if(!ev)throw E(400,'Escolha um campeonato.');
     if(b.paid!==true)throw E(400,'Confirme o pagamento (\"Já paguei\") para continuar a inscrição.');
     const players=(Array.isArray(b.players)?b.players:[]).map(p=>clean(p,30)).filter(Boolean).slice(0,15);
     if(name.length<2||!captain||!players.length)throw E(400,'Preencha o nome do time, o capitão e ao menos um jogador.');
+    if(ev.maxTeams&&db.teams.filter(t=>t.eventId===ev.id).length>=ev.maxTeams)throw E(400,'Inscrições encerradas: este campeonato já atingiu o limite de '+ev.maxTeams+' times.');
     if(db.teams.some(t=>t.eventId===ev.id&&t.name.toLowerCase()===name.toLowerCase()))throw E(400,'Já existe um time com esse nome neste campeonato.');
-    db.teams.push({id:rnd(6),name,captain,players,owner:u.id,eventId:ev.id,paid:'aguardando'});save();return{ok:1};
+    db.teams.push({id:rnd(6),name,captain,players,owner:u.id,eventId:ev.id,paid:'aguardando',eaClubId:clean(b.eaClubId,30)||null,eaPlatform:clean(b.eaPlatform,30)||null,eaPlayers:Array.isArray(b.eaPlayers)?b.eaPlayers.slice(0,30):[]});save();return{ok:1};
   }
   if(m==='DELETE'&&url.startsWith('/api/teams/')){
     need();const t=db.teams.find(x=>x.id===url.split('/').pop());if(!t)throw E(404,'Time não encontrado.');
     if(t.owner!==u.id&&!u.admin)throw E(403,'Você só pode remover o seu time.');
-    db.teams=db.teams.filter(x=>x!==t);save();return{ok:1};
-  }
-  if(m==='POST'&&url==='/api/admin/events'){adm();db.events.push(evData(b,{id:rnd(6)}));save();return{ok:1}}
-  if(m==='PATCH'&&url.startsWith('/api/admin/events/')){adm();const e=db.events.find(x=>x.id===url.split('/').pop());if(!e)throw E(404,'Campeonato não encontrado.');Object.assign(e,evData(b,e));save();return{ok:1}}
-  if(m==='DELETE'&&url.startsWith('/api/admin/events/')){adm();const id=url.split('/').pop();db.events=db.events.filter(x=>x.id!==id);save();return{ok:1}}
-  if(m==='POST'&&url.startsWith('/api/admin/teampay/')){adm();const t=db.teams.find(x=>x.id===url.split('/').pop());if(!t)throw E(404,'Time não encontrado.');t.paid=t.paid==='confirmado'?'aguardando':'confirmado';save();return{ok:1}}
-  if(m==='POST'&&url==='/api/admin/autoteams'){
-    adm();for(const n of BOTS){if(db.teams.length>=16)break;
-      if(!db.teams.some(t=>t.name===n))db.teams.push({id:rnd(6),name:n,captain:'Capitão '+n.split(' ')[0],players:['Jogador 1','Jogador 2','Jogador 3','Jogador 4','Jogador 5'],owner:'auto',auto:true})}
+    db.teams=db.teams.filter(x=>x!==t);
+    if(db.tournament&&Array.isArray(db.tournament.teams)&&db.tournament.teams.includes(t.name))db.tournament=null;
     save();return{ok:1};
   }
-  if(m==='POST'&&url==='/api/admin/tournament'){adm();db.tournament=b;save();return{ok:1}}
+  if(m==='POST'&&url==='/api/admin/events'){adm();db.events.push(evData(b,{id:rnd(6)}));save();return{ok:1}}
+  if(m==='PATCH'&&url.startsWith('/api/admin/events/')){adm();const e=db.events.find(x=>x.id===url.split('/').pop());if(!e)throw E(404,'Campeonato não encontrado.');const nd=evData(b,e),inscritos=db.teams.filter(t=>t.eventId===e.id).length;if(inscritos>nd.maxTeams)throw E(400,'Já há '+inscritos+' times inscritos; o limite não pode ser menor que isso.');Object.assign(e,nd);save();return{ok:1}}
+  if(m==='DELETE'&&url.startsWith('/api/admin/events/')){
+    adm();
+    const id=url.split('/').pop(),e=db.events.find(x=>x.id===id);
+    if(!e)throw E(404,'Campeonato não encontrado.');
+    const removedTeams=db.teams.filter(t=>t.eventId===id);
+    const removedNames=new Set(removedTeams.map(t=>t.name));
+    db.teams=db.teams.filter(t=>t.eventId!==id);
+    db.events=db.events.filter(x=>x.id!==id);
+    if(db.tournament && (db.tournament.event===e.name || (Array.isArray(db.tournament.teams)&&db.tournament.teams.some(name=>removedNames.has(name)))))db.tournament=null;
+    save();return{ok:1,removedTeams:removedTeams.length};
+  }
+  if(m==='POST'&&url.startsWith('/api/admin/teampay/')){adm();const t=db.teams.find(x=>x.id===url.split('/').pop());if(!t)throw E(404,'Time não encontrado.');t.paid=t.paid==='confirmado'?'aguardando':'confirmado';save();return{ok:1}}
+  if(m==='DELETE'&&url==='/api/admin/teams'){adm();db.teams=[];db.tournament=null;save();return{ok:1}}
+  if(m==='POST'&&url==='/api/admin/tournament'){adm();if(!db.teams.length)throw E(400,'falta time');db.tournament=b;save();return{ok:1}}
   if(m==='POST'&&url==='/api/admin/scorers'){
     adm();const name=clean(b.name,30);if(!name)throw E(400,'Digite o nome do jogador.');
     db.scorers.push({id:rnd(6),name,team:clean(b.team,30),goals:Math.max(0,+b.goals||0)});save();return{ok:1};
@@ -90,8 +223,8 @@ http.createServer((req,res)=>{
     cookie=Object.fromEntries((req.headers.cookie||'').split(';').map(c=>c.trim().split('=')).filter(c=>c[0]));
     const u=db.users.find(x=>x.id===db.sessions[cookie.sid]);let raw='';
     req.on('data',c=>{raw+=c;if(raw.length>2e6)req.destroy()});
-    return req.on('end',()=>{let code=200,out;
-      try{out=handle(req.method,url,raw?JSON.parse(raw):{},u,res)}catch(e){code=e.code>=400?e.code:500;out={error:e.code>=400?e.message:'Erro no servidor.'};if(code===500)console.error(e)}
+    return req.on('end',async()=>{let code=200,out;
+      try{out=await handle(req.method,url,raw?JSON.parse(raw):{},u,res)}catch(e){code=e.code>=400?e.code:500;out={error:e.code>=400?e.message:'Erro no servidor.'};if(code===500)console.error(e)}
       res.writeHead(code,{'Content-Type':'application/json',...(res.getHeader('Set-Cookie')?{'Set-Cookie':res.getHeader('Set-Cookie')}:{})});res.end(JSON.stringify(out));});
   }
   const f=path.join(PUB,url==='/'?'index.html':path.normalize(url));
