@@ -24,13 +24,4 @@
 ## Importante
 A integração usa endpoints não oficiais/não documentados do serviço de Pro Clubs da EA. Eles podem mudar, exigir ajustes ou sofrer bloqueios/rate limits. O código inclui timeout, retry e fallback entre endpoints de membros.
 
-
-
-## Banco de dados online (PostgreSQL)
-Tudo (campeonatos, inscrições, elencos) é salvo automaticamente no banco a cada ação.
-1. Crie um banco gratuito no [Supabase](https://supabase.com) ou [Neon](https://neon.tech) e copie a *connection string*.
-2. Defina a variável `DATABASE_URL` (no `.env`/painel da hospedagem).
-3. `npm install` e `npm start`. A tabela `app_state` é criada sozinha; se existir um `db.json`, ele é importado na primeira execução.
-4. Teste em `/api/saude` — deve mostrar `"armazenamento":"postgres"`.
-
-Sem `DATABASE_URL` o app usa `db.json` (só para testes locais; em hospedagens como Render/Railway esse arquivo some a cada deploy).
+O armazenamento atual é `db.json`, adequado para testes. Para produção, use um banco real.

@@ -1,7 +1,7 @@
 const express = require('express');
+const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const db = require('./db');
 
 const app = express();
 app.use(express.json());
@@ -16,6 +16,13 @@ const EA_HEADERS = {
   'Accept': 'application/json, text/plain, */*',
   'Referer': 'https://www.ea.com/'
 };
+const DB_FILE = path.join(__dirname, 'db.json');
+
+function loadDB() {
+  try { return JSON.parse(fs.readFileSync(DB_FILE, 'utf8')); }
+  catch { return { campeonatos: [] }; }
+}
+function saveDB(db) { fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2)); }
 const uid = () => crypto.randomBytes(6).toString('hex');
 
 function adminOnly(req, res, next) {
@@ -143,55 +150,33 @@ app.get('/api/ea/clube/:clubId/elenco', async (req, res) => {
   }
 });
 
-function sendError(res, e, fallback) {
-  if (e instanceof db.HttpError) return res.status(e.status).json(e.body);
-  console.error(e);
-  res.status(500).json({ erro: fallback || 'Erro interno ao acessar o banco de dados.', detalhe: e.message });
-}
+app.get('/api/campeonatos', (req, res) => res.json(loadDB().campeonatos));
 
-app.get('/api/saude', async (req, res) => {
-  try { await db.read(); res.json({ ok: true, armazenamento: db.getMode() }); }
-  catch (e) { res.status(500).json({ ok: false, armazenamento: db.getMode(), detalhe: e.message }); }
-});
-
-app.get('/api/campeonatos', async (req, res) => {
-  try { res.json((await db.read()).campeonatos); }
-  catch (e) { sendError(res, e); }
-});
-
-app.post('/api/campeonatos', adminOnly, async (req, res) => {
+app.post('/api/campeonatos', adminOnly, (req, res) => {
   const { data, nome, formato, valor, descricao, vagas } = req.body;
   if (!data || !nome) return res.status(400).json({ erro: 'Data e nome são obrigatórios.' });
-  try {
-    const camp = await db.mutate(d => {
-      const novo = { id: uid(), data, nome, formato: formato || '6x6', valor: Number(valor) || 0, descricao: descricao || '', vagas: Number(vagas) || 16, times: [] };
-      d.campeonatos.push(novo);
-      return novo;
-    });
-    res.status(201).json(camp);
-  } catch (e) { sendError(res, e); }
+  const db = loadDB();
+  const camp = { id: uid(), data, nome, formato: formato || '6x6', valor: Number(valor) || 0, descricao: descricao || '', vagas: Number(vagas) || 16, times: [] };
+  db.campeonatos.push(camp); saveDB(db); res.status(201).json(camp);
 });
 
-app.delete('/api/campeonatos/:id', adminOnly, async (req, res) => {
-  try {
-    await db.mutate(d => {
-      const antes = d.campeonatos.length;
-      d.campeonatos = d.campeonatos.filter(c => c.id !== req.params.id);
-      if (d.campeonatos.length === antes) throw new db.HttpError(404, { erro: 'Campeonato não encontrado.' });
-    });
-    res.json({ ok: true });
-  } catch (e) { sendError(res, e); }
+app.delete('/api/campeonatos/:id', adminOnly, (req, res) => {
+  const db = loadDB();
+  const antes = db.campeonatos.length;
+  db.campeonatos = db.campeonatos.filter(c => c.id !== req.params.id);
+  if (db.campeonatos.length === antes) return res.status(404).json({ erro: 'Campeonato não encontrado.' });
+  saveDB(db); res.json({ ok: true });
 });
 
 app.post('/api/campeonatos/:id/inscrever', async (req, res) => {
+  const db = loadDB();
+  const camp = db.campeonatos.find(c => c.id === req.params.id);
+  if (!camp) return res.status(404).json({ erro: 'Campeonato não encontrado.' });
+  if (camp.times.length >= camp.vagas) return res.status(400).json({ erro: 'Campeonato lotado.' });
+
   let { clubName, clubId, jogadores, platform } = req.body;
   platform = platformOf(platform);
   try {
-    // Pré-checagem (sem travar o banco enquanto consulta a EA).
-    const atual = (await db.read()).campeonatos.find(c => c.id === req.params.id);
-    if (!atual) return res.status(404).json({ erro: 'Campeonato não encontrado.' });
-    if (atual.times.length >= atual.vagas) return res.status(400).json({ erro: 'Campeonato lotado.' });
-
     if (!clubId) {
       if (!clubName) return res.status(400).json({ erro: 'Informe o nome do clube.' });
       const achados = await buscarClubes(clubName, platform);
@@ -201,7 +186,7 @@ app.post('/api/campeonatos/:id/inscrever', async (req, res) => {
       clubId = escolhido.clubId; clubName = escolhido.nome;
     }
 
-    if (atual.times.some(t => t.clubId === String(clubId) && t.platform === platform))
+    if (camp.times.some(t => t.clubId === String(clubId) && t.platform === platform))
       return res.status(400).json({ erro: 'Esse clube já está inscrito nesta plataforma.' });
 
     let elenco;
@@ -218,59 +203,31 @@ app.post('/api/campeonatos/:id/inscrever', async (req, res) => {
     const info = await buscarInfoClube(clubId, platform).catch(() => ({}));
     clubName = clubName || info.name || info.clubName || `Clube ${clubId}`;
     const time = { id: uid(), clubId: String(clubId), nome: clubName, platform, jogadores: elenco, eaInfo: info, inscritoEm: new Date().toISOString() };
-
-    // Grava de forma atômica, revalidando vagas e duplicidade.
-    await db.mutate(d => {
-      const camp = d.campeonatos.find(c => c.id === req.params.id);
-      if (!camp) throw new db.HttpError(404, { erro: 'Campeonato não encontrado.' });
-      if (camp.times.length >= camp.vagas) throw new db.HttpError(400, { erro: 'Campeonato lotado.' });
-      if (camp.times.some(t => t.clubId === String(clubId) && t.platform === platform))
-        throw new db.HttpError(400, { erro: 'Esse clube já está inscrito nesta plataforma.' });
-      camp.times.push(time);
-    });
-    res.status(201).json(time);
+    camp.times.push(time); saveDB(db); res.status(201).json(time);
   } catch (e) {
-    if (e instanceof db.HttpError) return sendError(res, e);
-    res.status(502).json({ erro: 'Falha ao consultar a EA ou salvar no banco.', detalhe: e.message });
+    res.status(502).json({ erro: 'Falha ao consultar a EA.', detalhe: e.message });
   }
 });
 
 app.post('/api/campeonatos/:id/times/:timeId/atualizar', async (req, res) => {
+  const db = loadDB();
+  const camp = db.campeonatos.find(c => c.id === req.params.id);
+  const time = camp?.times.find(t => t.id === req.params.timeId);
+  if (!time) return res.status(404).json({ erro: 'Time não encontrado.' });
   try {
-    const camp0 = (await db.read()).campeonatos.find(c => c.id === req.params.id);
-    const time0 = camp0?.times.find(t => t.id === req.params.timeId);
-    if (!time0) return res.status(404).json({ erro: 'Time não encontrado.' });
-    const plat = time0.platform || DEFAULT_PLATFORM;
-
-    const jogadores = await buscarElenco(time0.clubId, plat);
-    const eaInfo = await buscarInfoClube(time0.clubId, plat).catch(() => time0.eaInfo || {});
-
-    const atualizado = await db.mutate(d => {
-      const time = d.campeonatos.find(c => c.id === req.params.id)?.times.find(t => t.id === req.params.timeId);
-      if (!time) throw new db.HttpError(404, { erro: 'Time não encontrado.' });
-      time.jogadores = jogadores;
-      time.eaInfo = eaInfo;
-      time.atualizadoEm = new Date().toISOString();
-      return time;
-    });
-    res.json(atualizado);
-  } catch (e) {
-    if (e instanceof db.HttpError) return sendError(res, e);
-    res.status(502).json({ erro: 'Falha ao consultar a EA ou salvar no banco.', detalhe: e.message });
-  }
+    time.jogadores = await buscarElenco(time.clubId, time.platform || DEFAULT_PLATFORM);
+    time.eaInfo = await buscarInfoClube(time.clubId, time.platform || DEFAULT_PLATFORM).catch(() => time.eaInfo || {});
+    time.atualizadoEm = new Date().toISOString();
+    saveDB(db); res.json(time);
+  } catch (e) { res.status(502).json({ erro: 'Falha ao consultar a EA.', detalhe: e.message }); }
 });
 
-app.delete('/api/campeonatos/:id/times/:timeId', adminOnly, async (req, res) => {
-  try {
-    await db.mutate(d => {
-      const camp = d.campeonatos.find(c => c.id === req.params.id);
-      if (!camp) throw new db.HttpError(404, { erro: 'Campeonato não encontrado.' });
-      camp.times = camp.times.filter(t => t.id !== req.params.timeId);
-    });
-    res.json({ ok: true });
-  } catch (e) { sendError(res, e); }
+app.delete('/api/campeonatos/:id/times/:timeId', adminOnly, (req, res) => {
+  const db = loadDB();
+  const camp = db.campeonatos.find(c => c.id === req.params.id);
+  if (!camp) return res.status(404).json({ erro: 'Campeonato não encontrado.' });
+  camp.times = camp.times.filter(t => t.id !== req.params.timeId);
+  saveDB(db); res.json({ ok: true });
 });
 
-db.init()
-  .then(() => app.listen(PORT, () => console.log(`Rodando em http://localhost:${PORT}`)))
-  .catch(e => { console.error('Falha ao iniciar o banco de dados:', e.message); process.exit(1); });
+app.listen(PORT, () => console.log(`Rodando em http://localhost:${PORT}`));
