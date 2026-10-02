@@ -248,11 +248,19 @@ document.addEventListener('click',async e=>{
       btn.disabled=true;btn.textContent='🔎 Buscando...';box.innerHTML='<p class="note">Consultando os clubes do EA SPORTS FC 26...</p>';status.textContent='';
       try{
         const r=await api('POST','/api/proclubs/search',{name,platform});
-        if(!r.clubs?.length){box.innerHTML='<p class="note">Nenhum clube encontrado. Tente o nome exato do clube e confirme a plataforma.</p>';return}
+        if(!r.clubs?.length){
+          box.innerHTML=`<p class="note">${esc(r.message||'Nenhum clube encontrado. Tente o nome exato do clube e confirme a plataforma.')}</p><p class="note">Você pode continuar pelo <b>Cadastro manual</b> abaixo.</p>`;
+          const auto=$('playersAuto'),manual=$('playersManual'),area=$('proPlayers');
+          if(auto)auto.hidden=true;if(manual)manual.hidden=false;if(area){area.readOnly=false;area.focus()}
+          document.querySelectorAll('.player-tab').forEach(b=>b.classList.toggle('on',b.dataset.playermode==='manual'));
+          return;
+        }
         box.innerHTML='<p class="note">Selecione seu clube:</p>'+r.clubs.slice(0,10).map(c=>`<button type="button" class="sec" style="display:block;width:100%;text-align:left;margin-top:6px" data-proselect="${esc(c.id)}" data-proplatform="${esc(c.platform)}" data-proname="${esc(c.name)}">${esc(c.name)}${c.tag?' · '+esc(c.tag):''}${c.owner?' — '+esc(c.owner):''}</button>`).join('');
       }catch(err){
-        box.innerHTML='<p class="note">Não foi possível consultar a EA agora. Tente novamente em alguns segundos.</p>';
-        throw err;
+        box.innerHTML='<p class="note">A consulta automática da EA está indisponível. O cadastro manual foi liberado.</p>';
+        const auto=$('playersAuto'),manual=$('playersManual'),area=$('proPlayers');
+        if(auto)auto.hidden=true;if(manual)manual.hidden=false;if(area){area.readOnly=false;area.focus()}
+        document.querySelectorAll('.player-tab').forEach(b=>b.classList.toggle('on',b.dataset.playermode==='manual'));
       }finally{
         btn.disabled=false;btn.textContent='🔎 Buscar clube';
       }
@@ -330,7 +338,17 @@ document.addEventListener('submit',async e=>{
     if(a==='login'||a==='register'){await api('POST','/api/'+a,d);tab='home'}
     else if(a==='forgot'){await api('POST','/api/forgot',d);return alert('Se esse e-mail estiver cadastrado, o link de recuperação foi gerado. Confira com a organização (ela recebe o link no terminal do servidor).')}
     else if(a==='reset'){await api('POST','/api/reset',d);location.hash='';alert('Senha alterada! Agora é só entrar.')}
-    else if(a==='team'){await api('POST','/api/teams',{...d,players:d.players.split('\n').map(x=>x.trim()).filter(Boolean),eaPlayers:d.players.split('\n').map(x=>x.trim()).filter(Boolean),paid:!!paid[d.eventId]});delete paid[d.eventId];tab='teams';alert('Time inscrito! Lembre-se de enviar o comprovante do Pix para '+PIX_NUM+'.')}
+    else if(a==='team'){
+      const eventId=d.eventId||evSel;
+      const playerText=String(d.players||'');
+      const playerList=playerText.split('\n').map(x=>x.trim()).filter(Boolean);
+      if(!eventId)throw new Error('Nenhum campeonato foi selecionado. Volte para Campeonatos e tente novamente.');
+      if(!playerList.length)throw new Error('Adicione pelo menos um jogador ao time.');
+      await api('POST','/api/teams',{...d,eventId,players:playerList,eaPlayers:playerList,paid:!!paid[eventId]});
+      delete paid[eventId];
+      tab='teams';
+      alert('Time inscrito! Lembre-se de enviar o comprovante do Pix para '+PIX_NUM+'.');
+    }
     else if(a==='event'){const id=d.id;delete d.id;if(id)await api('PATCH','/api/admin/events/'+id,d);else await api('POST','/api/admin/events',d);editEv=null}
     else if(a==='scorer'){await api('POST','/api/admin/scorers',d)}
     await load();

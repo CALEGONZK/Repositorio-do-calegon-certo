@@ -24,203 +24,61 @@
  ],
  "teams": [
   {
-   "id": "fa953c3963ee",
-   "name": "Tubarões PC",
-   "captain": "Capitão Tubarões",
+   "id": "635a3ce72147",
+   "name": "Sokafofos",
+   "captain": "Luis Francisco",
    "players": [
-    "Jogador 1",
-    "Jogador 2",
-    "Jogador 3",
-    "Jogador 4",
-    "Jogador 5"
+    "Luis Francisco",
+    "Nicolas Calegon",
+    "Adam Souza",
+    "Vitor Chacon",
+    "Nareba",
+    "Jotape"
    ],
-   "owner": "auto",
-   "auto": true
+   "owner": "386e8e9e0b83",
+   "eventId": "4d3caccda846",
+   "paid": "aguardando",
+   "eaClubId": null,
+   "eaPlatform": null,
+   "eaPlayers": [
+    "Luis Francisco",
+    "Nicolas Calegon",
+    "Adam Souza",
+    "Vitor Chacon",
+    "Nareba",
+    "Jotape"
+   ]
   },
   {
-   "id": "f5946afa4564",
-   "name": "Fênix United",
-   "captain": "Capitão Fênix",
+   "id": "9b4ff26132d6",
+   "name": "Mercenario FC",
+   "captain": "Fábricio",
    "players": [
-    "Jogador 1",
-    "Jogador 2",
-    "Jogador 3",
-    "Jogador 4",
-    "Jogador 5"
+    "Marcelo Matos",
+    "Josue Felipe",
+    "Nicolas Silva",
+    "Arthur Pereira",
+    "Helvio Pereira",
+    "Fábricio"
    ],
-   "owner": "auto",
-   "auto": true
-  },
-  {
-   "id": "eaa949181edc",
-   "name": "Águias do Sul",
-   "captain": "Capitão Águias",
-   "players": [
-    "Jogador 1",
-    "Jogador 2",
-    "Jogador 3",
-    "Jogador 4",
-    "Jogador 5"
-   ],
-   "owner": "auto",
-   "auto": true
-  },
-  {
-   "id": "76e533133865",
-   "name": "Trovão SC",
-   "captain": "Capitão Trovão",
-   "players": [
-    "Jogador 1",
-    "Jogador 2",
-    "Jogador 3",
-    "Jogador 4",
-    "Jogador 5"
-   ],
-   "owner": "auto",
-   "auto": true
-  },
-  {
-   "id": "1f9081dbdbdc",
-   "name": "Leões de Ferro",
-   "captain": "Capitão Leões",
-   "players": [
-    "Jogador 1",
-    "Jogador 2",
-    "Jogador 3",
-    "Jogador 4",
-    "Jogador 5"
-   ],
-   "owner": "auto",
-   "auto": true
-  },
-  {
-   "id": "d3b44d624e49",
-   "name": "Cobras FC",
-   "captain": "Capitão Cobras",
-   "players": [
-    "Jogador 1",
-    "Jogador 2",
-    "Jogador 3",
-    "Jogador 4",
-    "Jogador 5"
-   ],
-   "owner": "auto",
-   "auto": true
-  },
-  {
-   "id": "c14e36ff63b2",
-   "name": "Titãs Gaming",
-   "captain": "Capitão Titãs",
-   "players": [
-    "Jogador 1",
-    "Jogador 2",
-    "Jogador 3",
-    "Jogador 4",
-    "Jogador 5"
-   ],
-   "owner": "auto",
-   "auto": true
-  },
-  {
-   "id": "ba1328120bdc",
-   "name": "Falcões PC",
-   "captain": "Capitão Falcões",
-   "players": [
-    "Jogador 1",
-    "Jogador 2",
-    "Jogador 3",
-    "Jogador 4",
-    "Jogador 5"
-   ],
-   "owner": "auto",
-   "auto": true
-  },
-  {
-   "id": "7d3f2deccac4",
-   "name": "Raio Violeta",
-   "captain": "Capitão Raio",
-   "players": [
-    "Jogador 1",
-    "Jogador 2",
-    "Jogador 3",
-    "Jogador 4",
-    "Jogador 5"
-   ],
-   "owner": "auto",
-   "auto": true
-  },
-  {
-   "id": "1ea5ff35b700",
-   "name": "Gigantes SC",
-   "captain": "Capitão Gigantes",
-   "players": [
-    "Jogador 1",
-    "Jogador 2",
-    "Jogador 3",
-    "Jogador 4",
-    "Jogador 5"
-   ],
-   "owner": "auto",
-   "auto": true
-  },
-  {
-   "id": "3c6ba618f0b9",
-   "name": "Nômades FC",
-   "captain": "Capitão Nômades",
-   "players": [
-    "Jogador 1",
-    "Jogador 2",
-    "Jogador 3",
-    "Jogador 4",
-    "Jogador 5"
-   ],
-   "owner": "auto",
-   "auto": true
-  },
-  {
-   "id": "87cf97dd638f",
-   "name": "Furacão Azul",
-   "captain": "Capitão Furacão",
-   "players": [
-    "Jogador 1",
-    "Jogador 2",
-    "Jogador 3",
-    "Jogador 4",
-    "Jogador 5"
-   ],
-   "owner": "auto",
-   "auto": true
-  },
-  {
-   "id": "7140e1a6e3c6",
-   "name": "Sombras United",
-   "captain": "Capitão Sombras",
-   "players": [
-    "Jogador 1",
-    "Jogador 2",
-    "Jogador 3",
-    "Jogador 4",
-    "Jogador 5"
-   ],
-   "owner": "auto",
-   "auto": true
-  },
-  {
-   "id": "f35cc7f94238",
-   "name": "Corsários PC",
-   "captain": "Capitão Corsários",
-   "players": [
-    "Jogador 1",
-    "Jogador 2",
-    "Jogador 3",
-    "Jogador 4",
-    "Jogador 5"
-   ],
-   "owner": "auto",
-   "auto": true
+   "owner": "386e8e9e0b83",
+   "eventId": "4d3caccda846",
+   "paid": "aguardando",
+   "eaClubId": null,
+   "eaPlatform": null,
+   "eaPlayers": [
+    "Marcelo Matos",
+    "Josue Felipe",
+    "Nicolas Silva",
+    "Arthur Pereira",
+    "Helvio Pereira",
+    "Fábricio"
+   ]
   }
  ],
- "sessions": {},
+ "sessions": {
+  "0458e88f62901a2b864ffbde15c826b05ec3c51c54b07414": "386e8e9e0b83"
+ },
  "resets": {},
  "tournament": null,
  "scorers": [],
